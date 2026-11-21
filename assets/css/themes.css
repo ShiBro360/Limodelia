@@ -1,0 +1,92 @@
+:root[data-theme="dark"] {
+    color-scheme: dark;
+
+    --color-bg: #171312;
+    --color-topbar: rgba(23, 19, 18, 0.92);
+    --color-card: #231A18;
+    --color-sidebar: #1D1513;
+    --color-border: #4A342E;
+    --color-text: #F3E8E4;
+    --color-text-secondary: #B69F98;
+    --color-primary: #7A4A32;
+    --color-primary-hover: #CF78AF;
+    --color-accent: #CF78AF;
+    --color-primary-soft: rgba(207, 120, 175, 0.14);
+    --color-donut-empty: #5A3D34;
+    --color-progress-track: #3A2B27;
+    --color-limit-note-bg: #34231E;
+    --color-limit-note-text: #C58A52;
+    --shadow-soft: 0 12px 32px rgba(0, 0, 0, 0.24);
+    --shadow-panel: 0 20px 60px rgba(0, 0, 0, 0.38);
+}
+
+:root[data-theme="dark"] .lesson-day.is-paid {
+    border-color: rgba(47, 125, 50, 0.52);
+    background: rgba(47, 125, 50, 0.18);
+    color: #2F7D32;
+}
+
+:root[data-theme="dark"] .lesson-day.is-individual {
+    border-color: rgba(79, 125, 217, 0.52);
+    background: rgba(49, 92, 168, 0.20);
+    color: #4F7DD9;
+}
+
+:root[data-theme="dark"] .lesson-day.is-split-group-individual {
+    border-color: rgba(76, 132, 148, 0.52);
+    background: linear-gradient(90deg, rgba(47, 125, 50, 0.18) 0 calc(50% - 1px), rgba(76, 132, 148, 0.34) calc(50% - 1px) calc(50% + 1px), rgba(49, 92, 168, 0.20) calc(50% + 1px) 100%);
+    color: #4C8494;
+}
+
+:root[data-theme="dark"] .lesson-day.is-unpaid {
+    border-color: rgba(185, 176, 167, 0.38);
+    background: rgba(98, 90, 83, 0.22);
+    color: #B9B0A7;
+    box-shadow: none;
+}
+
+:root[data-theme="dark"] .lesson-day.is-cancelled {
+    border-color: rgba(178, 75, 75, 0.52);
+    background: rgba(178, 75, 75, 0.18);
+    color: #C76666;
+}
+
+:root[data-theme="dark"] .filter-bar {
+    background: rgba(35, 26, 24, 0.94);
+}
+
+:root[data-theme="dark"] select,
+:root[data-theme="dark"] select option,
+:root[data-theme="dark"] select optgroup {
+    background-color: var(--color-card);
+    color: var(--color-text);
+}
+
+:root[data-theme="dark"] .payment-plan-card {
+    border-color: var(--color-border);
+    background: linear-gradient(145deg, #2B201D, #241A18);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+}
+
+:root[data-theme="dark"] .payment-plan-option:hover .payment-plan-card,
+:root[data-theme="dark"] .payment-plan-input:focus-visible + .payment-plan-card {
+    border-color: rgba(200, 155, 60, 0.58);
+    background: linear-gradient(145deg, #34261F, #2A1D1A);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
+}
+
+:root[data-theme="dark"] .payment-plan-input:checked + .payment-plan-card {
+    border-color: var(--color-primary);
+    background: linear-gradient(145deg, rgba(122, 74, 50, 0.62), rgba(52, 35, 30, 0.96));
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28);
+}
+
+:root[data-theme="dark"] .payment-quick-preview {
+    border-color: var(--color-border);
+    background: linear-gradient(135deg, rgba(122, 74, 50, 0.22), rgba(35, 26, 24, 0.92));
+}
+
+.theme-transition,
+.theme-transition * {
+    transition: background-color .18s ease, border-color .18s ease, color .18s ease, box-shadow .18s ease;
+}

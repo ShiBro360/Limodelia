@@ -1,0 +1,46 @@
+# --- secrets & local config -------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+auth.json
+config.local.php
+
+# --- dependencies -----------------------------------------------------------
+/vendor/
+/node_modules/
+
+# --- database dumps ---------------------------------------------------------
+# The project's own schema (database/database.sql) and seed.sql are tracked.
+# Backups and exports may contain real people, so they never are.
+*.dump
+*.sql.gz
+/database/backups/
+/database/dumps/
+/database/*.backup.sql
+
+# --- user content & exports -------------------------------------------------
+/uploads/
+/storage/
+/public/uploads/
+*.csv
+*.xlsx
+
+# --- logs & runtime ---------------------------------------------------------
+/logs/
+*.log
+/tmp/
+/cache/
+.phpunit.result.cache
+*.pid
+
+# --- OS / editors -----------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*~
