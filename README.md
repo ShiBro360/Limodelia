@@ -34,11 +34,38 @@ PHP 8.2 with PDO and MySQL — no framework — and in daily production use.
 
 ## Screenshots
 
-<!-- Add 2–4 screenshots taken against the seeded demo database, never production. -->
+Taken against the seeded demo database (`limodelia_demo`), never production.
+Every name, phone number and amount below is fictional.
 
-| Dashboard | Attendance | Payroll report |
-|---|---|---|
-| _add screenshot_ | _add screenshot_ | _add screenshot_ |
+**Dashboard** — current-month KPIs, revenue split by group, recent payments and
+expenses, lesson calendar.
+
+![Dashboard](docs/screenshots/01-dashboard.png)
+
+**Students** — list with filters, group, subscription and last payment per
+student.
+
+![Students](docs/screenshots/02-students.png)
+
+**Student profile, attendance tab** — one record per lesson date with status and
+whether the lesson counts against the subscription.
+
+![Attendance](docs/screenshots/03-attendance.png)
+
+**Payments** — payment log with method, covered period and status, plus the
+inline "add payment" form.
+
+![Payments](docs/screenshots/04-payments.png)
+
+**Expenses** — expense log with categories, payment methods and a per-category
+breakdown.
+
+![Expenses](docs/screenshots/05-expenses.png)
+
+**Reports** — revenue and expenses over time, profit before salaries, and the
+per-topic report cards.
+
+![Reports](docs/screenshots/06-reports.png)
 
 ## Stack
 
