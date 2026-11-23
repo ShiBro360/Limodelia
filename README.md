@@ -11,25 +11,26 @@ PHP 8.2 with PDO and MySQL — no framework — and in daily production use.
 
 ## What it does
 
-- **Students and groups** — enrolment, age groups, guardian contacts, Telegram
-  usernames, group assignment, statuses (lead / active / paused / inactive).
+- **Students and groups** — enrolment, group assignment, student and guardian
+  contacts (phone and Telegram), statuses (lead / active / paused / inactive /
+  archived).
 - **Subscriptions** — lesson packages with price and billing period, per-student
   subscription history and used/remaining lesson balance.
 - **Attendance** — one record per student per lesson date: present, absent with
   notice, absent without notice, cancelled by the school, and whether the lesson
   counts against the package.
 - **Money** — student payments with period coverage and printable receipts,
-  expense categories and expenses, outstanding balances.
+  expense categories and printable expense receipts.
 - **Salaries** — salary rules (fixed, per lesson, per student, percentage of net
   profit, remaining profit, bonus, deduction) and payouts per period with
   approval and payment dates.
 - **Trips and events** — trips, capacity, price and internal cost, participants,
   Cloudinary-backed photo galleries.
 - **Marketing** — campaigns with source, budget, leads and new-student counts.
-- **Reporting** — revenue, expenses, profit and loss, students, marketing, trips,
-  salaries; CSV export of students, payments, expenses and salaries.
-- **Operations** — roles and data scopes, settings, audit and system logs,
-  in-app notifications, database backups.
+- **Reporting** — six report views: financial summary, payments, expenses,
+  salaries, trips and students. Marketing spend is shown inside the financial
+  summary, not as a separate report.
+- **Operations** — settings, in-app notifications, database backups.
 - **Telegram** — a bot teachers use to mark attendance and to register students.
 
 ## Screenshots
@@ -75,7 +76,7 @@ per-topic report cards.
 | Database | MySQL 8, InnoDB, utf8mb4, PDO prepared statements, foreign keys and CHECK constraints |
 | Frontend | Server-rendered PHP templates, vanilla JavaScript, CSS |
 | Runtime | Apache on XAMPP |
-| Integrations | Telegram Bot API, SMTP, Cloudinary, CSV |
+| Integrations | Telegram Bot API, Cloudinary |
 
 No framework and no Composer by design: the goal was to own the request
 lifecycle, the SQL and the data model rather than hide them behind an ORM.
@@ -100,7 +101,8 @@ a timestamp, and salary payouts cannot be marked paid without a payment date.
 
 ## Roles
 
-Defined in `database/seed.sql`:
+Defined in `database/seed.sql`. The roles are seeded and assigned to users, but
+access control is not enforced yet — see *Known gaps*:
 
 | Role | Scope |
 |---|---|
@@ -207,9 +209,12 @@ otherwise unique keys such as e-mail and payment number collide.
 
 ## Known gaps (in progress)
 
+- no access control yet: a signed-in user reaches every page, and the seeded
+  roles are stored in the database without being checked on requests
+- no CSV, PDF or Excel export: reports and lists are rendered as pages only
+- no e-mail/SMTP integration
 - no automated test suite yet — module checklists are manual
 - no migration tool: schema changes are applied by hand and reviewed
-- CSRF tokens are not yet on every form
 - no CI pipeline
 
 These are listed on purpose: they are the next things I am fixing.
