@@ -32,6 +32,11 @@ const DEFAULT_STUDENTS = 30;
 const DEFAULT_WEEKS    = 8;
 const MONTHS_BACK      = 4;
 
+/** Salary model of the demo school: see App\Services\SalaryService::preview(). */
+const SALARY_ACCOUNTANT_FEE = 600.00;
+const SALARY_MARKETING_FEE  = 300.00;
+const SALARY_TEACHER_SHARE   = 40.0; // percent of the profit left after the fixed fees
+
 /** Databases that must never be seeded, even if the name matches the pattern. */
 const BLOCKED_DATABASES = [
     'limodelia', 'limodelia_crm', 'limodelia_prod', 'mediplus',
@@ -138,6 +143,7 @@ try {
         'administrator' => ['Administrator', 'Full access to CRM modules, settings and finances.'],
         'teacher'       => ['Teacher', 'Access to own groups, attendance and own salary summaries.'],
         'finance'       => ['Finance', 'Access to payments, expenses and financial reports.'],
+        'marketing'     => ['Marketing', 'Access to campaigns, leads and marketing reports.'],
     ] as $slug => [$roleName, $description]) {
         $roleIds[$slug] = ensure_row($pdo, 'roles', 'slug', $slug, [
             'name'        => $roleName,
@@ -176,6 +182,26 @@ try {
         $teacherIds[] = $teacherId;
         $counts['users'] = ($counts['users'] ?? 0) + 1;
     }
+
+    $accountantId = insert_row($pdo, 'users', [
+        'name'          => 'Demo Księgowa',
+        'email'         => 'accountant@example.com',
+        'password_hash' => $password,
+        'phone'         => fake_phone(),
+        'status'        => 'active',
+    ]);
+    attach_role($pdo, $accountantId, $roleIds['finance'], $adminId);
+    $counts['users'] = ($counts['users'] ?? 0) + 1;
+
+    $marketingId = insert_row($pdo, 'users', [
+        'name'          => 'Demo Marketing',
+        'email'         => 'marketing@example.com',
+        'password_hash' => $password,
+        'phone'         => fake_phone(),
+        'status'        => 'active',
+    ]);
+    attach_role($pdo, $marketingId, $roleIds['marketing'], $adminId);
+    $counts['users'] = ($counts['users'] ?? 0) + 1;
 
     // --------------------------------------------------------------- settings
     foreach ([
@@ -394,70 +420,43 @@ try {
     }
 
     // ----------------------------------------------------------- salary rules
-    $salaryRuleIds = [];
-    foreach ($teachers as $ti => [$first, $last, $rate]) {
-        $salaryRuleIds[$ti] = ensure_row(
-            $pdo,
-            'salary_rules',
-            'name',
-            'Stawka za zajęcia — ' . $first . ' ' . $last,
-            [
-                'name'           => 'Stawka za zajęcia — ' . $first . ' ' . $last,
-                'user_id'        => $teacherIds[$ti],
-                'role_scope'     => 'teacher',
-                'rule_type'      => 'per_lesson',
-                'amount'         => $rate,
-                'currency'       => 'PLN',
-                'effective_from' => $today->modify('-1 year')->format('Y-m-d'),
-                'status'         => 'active',
-            ]
-        );
-        $counts['salary_rules'] = ($counts['salary_rules'] ?? 0) + 1;
-    }
-
-    // --------------------------------------------------------- salary payouts
-    for ($m = MONTHS_BACK; $m >= 1; $m--) {
-        $monthStart = $today->modify('first day of this month')->modify("-{$m} months");
-        $monthEnd   = $monthStart->modify('last day of this month');
-        $ym         = $monthStart->format('Y-m');
-
-        foreach ($teachers as $ti => [$first, $last, $rate]) {
-            $lessons = 0;
-            foreach ($groups as $gi => $groupRow) {
-                if ($gi % count($teacherIds) !== $ti) {
-                    continue;
-                }
-                foreach ($sessionDates[$gi] ?? [] as $date) {
-                    if (str_starts_with($date, $ym)) {
-                        $lessons++;
-                    }
-                }
-            }
-
-            $base  = round($lessons * $rate, 2);
-            $bonus = $ti === 0 ? 150.00 : 0.00;
-            $total = $base + $bonus;
-
-            insert_row($pdo, 'salary_payouts', [
-                'user_id'         => $teacherIds[$ti],
-                'salary_rule_id'  => $salaryRuleIds[$ti],
-                'period_start'    => $monthStart->format('Y-m-d'),
-                'period_end'      => $monthEnd->format('Y-m-d'),
-                'base_amount'     => $base,
-                'bonus_amount'    => $bonus,
-                'deduction_amount' => 0.00,
-                'total_amount'    => $total,
-                'currency'        => 'PLN',
-                'status'          => 'paid',
-                'calculated_at'   => $monthEnd->format('Y-m-d') . ' 20:00:00',
-                'approved_by'     => $adminId,
-                'approved_at'     => $monthEnd->format('Y-m-d') . ' 20:05:00',
-                'paid_at'         => $monthEnd->modify('+2 days')->format('Y-m-d') . ' 10:00:00',
-                'notes'           => 'Wypłata demo: ' . $lessons . ' zajęć × ' . number_format($rate, 2, ',', ' ') . ' PLN',
-            ]);
-            $counts['salary_payouts'] = ($counts['salary_payouts'] ?? 0) + 1;
-        }
-    }
+    // These rules use exactly the types App\Services\SalaryService prices:
+    // fixed amounts for the accountant and marketing, a share of the remaining
+    // profit for the teacher. Types the calculator does not price yet
+    // (per_lesson, bonus, deduction) are deliberately not seeded.
+    $salaryRuleIds = [
+        'accountant' => ensure_row($pdo, 'salary_rules', 'name', 'Księgowość — stała kwota', [
+            'name'           => 'Księgowość — stała kwota',
+            'user_id'        => $accountantId,
+            'role_scope'     => 'accountant',
+            'rule_type'      => 'fixed',
+            'amount'         => SALARY_ACCOUNTANT_FEE,
+            'currency'       => 'PLN',
+            'effective_from' => $today->modify('-1 year')->format('Y-m-d'),
+            'status'         => 'active',
+        ]),
+        'marketing' => ensure_row($pdo, 'salary_rules', 'name', 'Marketing — stała kwota', [
+            'name'           => 'Marketing — stała kwota',
+            'user_id'        => $marketingId,
+            'role_scope'     => 'marketing',
+            'rule_type'      => 'fixed',
+            'amount'         => SALARY_MARKETING_FEE,
+            'currency'       => 'PLN',
+            'effective_from' => $today->modify('-1 year')->format('Y-m-d'),
+            'status'         => 'active',
+        ]),
+        'teacher' => ensure_row($pdo, 'salary_rules', 'name', 'Nauczycielka — procent pozostałego zysku', [
+            'name'           => 'Nauczycielka — procent pozostałego zysku',
+            'user_id'        => $teacherIds[0],
+            'role_scope'     => 'teacher',
+            'rule_type'      => 'percentage_net_profit',
+            'percentage'     => SALARY_TEACHER_SHARE,
+            'currency'       => 'PLN',
+            'effective_from' => $today->modify('-1 year')->format('Y-m-d'),
+            'status'         => 'active',
+        ]),
+    ];
+    $counts['salary_rules'] = ($counts['salary_rules'] ?? 0) + count($salaryRuleIds);
 
     // --------------------------------------------------------------- expenses
     $categoryIds = [];
@@ -468,6 +467,7 @@ try {
         'materialy' => 'Materiały',
         'uslugi'    => 'Usługi',
         'it'        => 'IT',
+        'ksiegowosc' => 'Księgowość',
     ] as $slug => $name) {
         $categoryIds[$slug] = ensure_row($pdo, 'expense_categories', 'slug', $slug, [
             'name'   => $name,
@@ -499,6 +499,80 @@ try {
             'approved_at'         => $today->modify('-1 month')->format('Y-m-04 09:00:00'),
         ]);
         $counts['expenses'] = ($counts['expenses'] ?? 0) + 1;
+    }
+
+    // --------------------------------------------------------- salary payouts
+    // Amounts mirror SalaryService::preview() for the rules above, and every paid
+    // payout records the linked salary expense the same way
+    // SalaryService::createPayout() does — so salaries really show up in expenses.
+    $revenueStmt = $pdo->prepare(
+        "SELECT COALESCE(SUM(amount), 0) FROM payments WHERE status = 'completed' AND payment_date BETWEEN ? AND ?"
+    );
+    $nonSalaryStmt = $pdo->prepare(
+        "SELECT COALESCE(SUM(amount), 0) FROM expenses
+         WHERE status NOT IN ('cancelled', 'rejected') AND is_salary = 0 AND expense_date BETWEEN ? AND ?"
+    );
+
+    for ($m = MONTHS_BACK; $m >= 1; $m--) {
+        $monthStart = $today->modify('first day of this month')->modify("-{$m} months");
+        $monthEnd   = $monthStart->modify('last day of this month');
+        $from       = $monthStart->format('Y-m-d');
+        $to         = $monthEnd->format('Y-m-d');
+
+        $revenueStmt->execute([$from, $to]);
+        $nonSalaryStmt->execute([$from, $to]);
+        $profitBase  = max(0.0, (float) $revenueStmt->fetchColumn() - (float) $nonSalaryStmt->fetchColumn());
+        $priorityObligations = min($profitBase, SALARY_ACCOUNTANT_FEE + SALARY_MARKETING_FEE);
+        $teacherBase = max(0.0, $profitBase - SALARY_ACCOUNTANT_FEE - SALARY_MARKETING_FEE);
+
+        $payouts = [
+            ['accountant', $accountantId, 'Accountant', SALARY_ACCOUNTANT_FEE, max(0.0, $profitBase - $priorityObligations)],
+            ['marketing',  $marketingId,  'Marketing specialist', SALARY_MARKETING_FEE, $profitBase],
+            ['teacher',    $teacherIds[0], 'Teacher', round($teacherBase * SALARY_TEACHER_SHARE / 100, 2), $teacherBase],
+        ];
+
+        foreach ($payouts as [$role, $userId, $label, $amount, $profitBasis]) {
+            if ($amount <= 0) {
+                continue;
+            }
+
+            $paidAt   = $monthEnd->modify('-1 day')->format('Y-m-d') . ' 10:00:00';
+            $payoutId = insert_row($pdo, 'salary_payouts', [
+                'user_id'          => $userId,
+                'salary_rule_id'   => $salaryRuleIds[$role],
+                'period_start'     => $from,
+                'period_end'       => $to,
+                'base_amount'      => $amount,
+                'bonus_amount'     => 0.00,
+                'deduction_amount' => 0.00,
+                'net_profit_base'  => round($profitBasis, 2),
+                'total_amount'     => $amount,
+                'currency'         => 'PLN',
+                'status'           => 'paid',
+                'calculated_at'    => $monthEnd->format('Y-m-d') . ' 20:00:00',
+                'approved_by'      => $adminId,
+                'approved_at'      => $monthEnd->format('Y-m-d') . ' 20:05:00',
+                'paid_at'          => $paidAt,
+                'notes'            => 'Wypłata demo (' . $role . ') za ' . $monthStart->format('m/Y') . '.',
+            ]);
+            $counts['salary_payouts'] = ($counts['salary_payouts'] ?? 0) + 1;
+
+            insert_row($pdo, 'expenses', [
+                'expense_category_id' => $categoryIds['ksiegowosc'],
+                'payment_method_id'   => $methodIds['przelew'],
+                'salary_payout_id'    => $payoutId,
+                'is_salary'           => 1,
+                'amount'              => $amount,
+                'currency'            => 'PLN',
+                'expense_date'        => substr($paidAt, 0, 10),
+                'description'         => 'Wynagrodzenie - ' . $label . ' - ' . $monthStart->format('Y-m'),
+                'status'              => 'paid',
+                'created_by'          => $adminId,
+                'approved_by'         => $adminId,
+                'approved_at'         => $paidAt,
+            ]);
+            $counts['expenses'] = ($counts['expenses'] ?? 0) + 1;
+        }
     }
 
     // ------------------------------------------------------ marketing & trips

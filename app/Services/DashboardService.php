@@ -42,7 +42,7 @@ final class DashboardService
                 'profit' => $profit,
                 'active_students' => $this->dashboard->activeStudentsCount(),
             ],
-            'monthly_teacher_net_profit' => $this->salaryService->monthlyTeacherNetProfit($chartYear),
+            'monthly_net_profit' => $this->normalizeMonthlyProfit($this->dashboard->monthlyNetProfit($chartYear)),
             'revenue_by_group' => $this->normalizeGroups($this->dashboard->revenueByGroup($monthStart, $monthEnd)),
             'recent_payments' => $this->dashboard->recentPayments(5),
             'recent_expenses' => $this->dashboard->recentExpenses(5),
@@ -68,9 +68,15 @@ final class DashboardService
         ];
     }
 
+    /**
+     * Twelve values, January first. Months without a payment or an expense stay
+     * null so the chart can show a gap instead of a zero-profit month.
+     *
+     * @return array<int, float|null>
+     */
     private function normalizeMonthlyProfit(array $rows): array
     {
-        $values = array_fill(1, 12, 0.0);
+        $values = array_fill(1, 12, null);
         foreach ($rows as $row) {
             $values[(int) $row['month']] = (float) $row['profit'];
         }

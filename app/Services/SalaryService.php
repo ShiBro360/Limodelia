@@ -112,18 +112,6 @@ final class SalaryService
         ];
     }
 
-    public function monthlyTeacherNetProfit(int $year): array
-    {
-        $values = array_fill(1, 12, 0.0);
-
-        for ($month = 1; $month <= 12; $month++) {
-            $preview = $this->preview(sprintf('%04d-%02d', $year, $month));
-            $values[$month] = (float) $preview['teacher'];
-        }
-
-        return $values;
-    }
-
     public function activeRules(): array
     {
         return $this->salaries->activeRules();

@@ -59,7 +59,12 @@ final class DashboardRepository
         return $stmt->fetchAll();
     }
 
-    public function monthlyProfitBeforeSalaries(int $year): array
+    /**
+     * Monthly school net profit: completed payments minus every recorded expense
+     * (salary expenses included), using the same filters as the dashboard KPIs
+     * and the financial report, so the yearly chart and the monthly figures agree.
+     */
+    public function monthlyNetProfit(int $year): array
     {
         $stmt = $this->pdo->prepare(
             "SELECT month, SUM(income) - SUM(expense) AS profit
@@ -72,7 +77,6 @@ final class DashboardRepository
                  SELECT MONTH(expense_date) AS month, 0 AS income, SUM(amount) AS expense
                  FROM expenses
                  WHERE status NOT IN ('cancelled', 'rejected')
-                   AND is_salary = 0
                    AND YEAR(expense_date) = :expense_year
                  GROUP BY MONTH(expense_date)
              ) monthly_totals

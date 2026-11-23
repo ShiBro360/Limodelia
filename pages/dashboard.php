@@ -110,7 +110,7 @@ render_page('Panel główny', 'dashboard', function () use ($dashboardData, $das
                             </select>
                         </form>
                     </div>
-                    <?= dashboard_revenue_chart($dashboardData['monthly_teacher_net_profit']) ?>
+                    <?= dashboard_revenue_chart($dashboardData['monthly_net_profit']) ?>
             </article>
 
             <article class="card dashboard-card-sm group-card dashboard-chart-sm">
@@ -266,8 +266,15 @@ function dashboard_month_url(DateTimeImmutable $month): string
 
 function dashboard_revenue_chart(array $values): string
 {
-    $minimumValue = min(0, (float) min($values));
-    $maximumValue = max(0, (float) max($values));
+    // A month without data is null, not zero: it must not be drawn as a month
+    // with no profit.
+    $known = array_filter($values, static fn ($value): bool => $value !== null);
+    if ($known === []) {
+        return '<div class="empty-state compact">Brak danych do wykresu w tym roku.</div>';
+    }
+
+    $minimumValue = min(0, (float) min($known));
+    $maximumValue = max(0, (float) max($known));
     $hasNegativeValues = $minimumValue < 0;
 
     if ($hasNegativeValues) {
@@ -281,16 +288,40 @@ function dashboard_revenue_chart(array $values): string
 
     $scaleRange = $scaleMaximum - $scaleMinimum;
     $points = [];
+    $segments = [];
+    $segment = [];
     $count = count($values);
     $i = 0;
     foreach ($values as $value) {
+        if ($value === null) {
+            if ($segment !== []) {
+                $segments[] = $segment;
+                $segment = [];
+            }
+            $i++;
+            continue;
+        }
+
         $x = $count > 1 ? ($i / ($count - 1)) * 100 : 0;
         $y = (($scaleMaximum - (float) $value) / $scaleRange) * 100;
-        $points[] = ['x' => $x, 'y' => $y, 'value' => (float) $value];
+        $point = ['x' => $x, 'y' => $y, 'value' => (float) $value];
+        $points[] = $point;
+        $segment[] = $point;
         $i++;
     }
+    if ($segment !== []) {
+        $segments[] = $segment;
+    }
 
-    $polyline = implode(' ', array_map(static fn (array $p): string => number_format($p['x'], 3, '.', '') . ',' . number_format($p['y'], 3, '.', ''), $points));
+    // One polyline per run of consecutive months that have data, so a gap in the
+    // year is not bridged by a misleading straight line.
+    $polylines = array_map(
+        static fn (array $run): string => implode(' ', array_map(
+            static fn (array $p): string => number_format($p['x'], 3, '.', '') . ',' . number_format($p['y'], 3, '.', ''),
+            $run
+        )),
+        $segments
+    );
     $html = '<div class="line-chart"><div class="chart-scale">';
     for ($step = 5; $step >= 0; $step--) {
         $labelValue = $scaleMinimum + (($scaleRange / 5) * $step);
@@ -301,7 +332,10 @@ function dashboard_revenue_chart(array $values): string
         $y = $line * 20;
         $html .= '<line class="chart-svg-gridline" x1="0" y1="' . $y . '" x2="100" y2="' . $y . '"></line>';
     }
-    $html .= '<polyline fill="none" stroke="var(--color-primary)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" points="' . \App\Helpers\FormatHelper::e($polyline) . '"></polyline></svg>';
+    foreach ($polylines as $polyline) {
+        $html .= '<polyline fill="none" stroke="var(--color-primary)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" points="' . \App\Helpers\FormatHelper::e($polyline) . '"></polyline>';
+    }
+    $html .= '</svg>';
     foreach ($points as $point) {
         $html .= '<span class="chart-point" style="left:' . \App\Helpers\FormatHelper::e((string) $point['x']) . '%; top:' . \App\Helpers\FormatHelper::e((string) $point['y']) . '%" title="' . \App\Helpers\FormatHelper::e(\App\Helpers\FormatHelper::money($point['value'])) . '"></span>';
     }
@@ -487,7 +521,7 @@ function dashboard_empty_data(DateTimeImmutable $date): array
     return [
         'period' => ['from' => $date->format('Y-m-01'), 'to' => $date->format('Y-m-t')],
         'kpis' => ['revenue' => 0, 'expenses' => 0, 'profit' => 0, 'active_students' => 0],
-        'monthly_teacher_net_profit' => array_fill(1, 12, 0),
+        'monthly_net_profit' => array_fill(1, 12, null),
         'revenue_by_group' => ['total' => 0, 'items' => []],
         'recent_payments' => [],
         'recent_expenses' => [],

@@ -21,9 +21,9 @@ PHP 8.2 with PDO and MySQL — no framework — and in daily production use.
   counts against the package.
 - **Money** — student payments with period coverage and printable receipts,
   expense categories and printable expense receipts.
-- **Salaries** — salary rules (fixed, per lesson, per student, percentage of net
-  profit, remaining profit, bonus, deduction) and payouts per period with
-  approval and payment dates.
+- **Salaries** — salary rules (fixed amount, per new student, percentage of net
+  profit, remaining profit) and payouts per period with approval and payment
+  dates; a paid payout records the linked salary expense.
 - **Trips and events** — trips, capacity, price and internal cost, participants,
   Cloudinary-backed photo galleries.
 - **Marketing** — campaigns with source, budget, leads and new-student counts.
@@ -194,14 +194,15 @@ The seeder refuses to run unless the database name contains `demo`, `dev`,
 
 `database/seed_demo.php` creates, deterministically (`mt_srand`):
 
-- 1 administrator, 3 teachers, 3 roles
+- 1 administrator, 3 teachers, 1 accountant, 1 marketing specialist, 4 roles
 - 6 groups (children, teens, adults, runway, show preparation)
 - 4 subscription packages and 3 payment methods
 - 30 students with invented names, `+48 5xx` phone numbers and
   `demo_uczen_*` Telegram handles
 - 4 months of payments plus the current month (some still pending)
 - 8 weeks of attendance, two sessions per week per group
-- salary rules, 4 months of payouts, 6 expenses, 2 campaigns, 2 trips
+- 3 salary rules, 4 months of payouts with their linked salary expenses,
+  6 expenses, 2 campaigns, 2 trips
 
 Names, contacts and amounts are invented; `@example.com` is reserved for
 documentation and cannot receive mail. Re-running requires `--reset --yes`,
@@ -213,6 +214,9 @@ otherwise unique keys such as e-mail and payment number collide.
   roles are stored in the database without being checked on requests
 - no CSV, PDF or Excel export: reports and lists are rendered as pages only
 - no e-mail/SMTP integration
+- salary rule types `per_lesson`, `bonus` and `deduction` exist in the schema but
+  are not priced yet: only fixed, per new student, percentage of net profit and
+  remaining profit are calculated
 - no automated test suite yet — module checklists are manual
 - no migration tool: schema changes are applied by hand and reviewed
 - no CI pipeline
