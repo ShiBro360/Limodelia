@@ -218,5 +218,3 @@ These are listed on purpose: they are the next things I am fixing.
 
 Artem Vitiaz — Bydgoszcz, Poland
 [github.com/ShiBro360](https://github.com/ShiBro360) · shibro36@gmail.com
-
-Full source (including client configuration) is available on request.
